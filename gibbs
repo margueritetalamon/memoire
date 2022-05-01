@@ -2,10 +2,10 @@ rm(list = ls())
 
 
 rmixtmod <- function(n,p,mu, sigma) {
+  #Générateur de modèles de mélange
   z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
   return(data.frame(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
 }
-
 
 
 melange <- gen3_mix(1000,c(0.3,0.7),c(0,2.5),c(1,1))
