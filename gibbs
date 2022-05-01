@@ -76,7 +76,8 @@ pivotal_reordering <- function(x, x_gibbs) {
   ormu <- matrix(0, n_gibbs, K)
   orsig <- matrix(0, n_gibbs, K)
   orp <- matrix(0, n_gibbs, K)
-  pz_etoile <- p_tau <- matrix(0, n_gibbs, K)
+  pz_etoile <- matrix(0, n_gibbs, K)
+  p_tau <- matrix(0, n_gibbs, K)
   perma <- permn(1:K) # toutes les combinaisons de permutations 1:k
   entropy <- rep(0, factorial(K))
   pz_etoile <- t(x_gibbs$p[indice, ] * sapply(x, dnorm, x_gibbs$mu[indice, ], sqrt(x_gibbs$sig[indice, ])))
@@ -107,23 +108,6 @@ dtest <- function(mu_1, mu_2, x, p, sig) {
 }
 
 
-
-mu_1 <- seq(-2.5, 4.5, .1)
-mu_2 <- seq(-2.5, 4.5, .1)
-like <- outer(mu_1, mu_2, dtest, x = melange$x)
-
-image(mu_1, mu_2, like, xlab = expression(mu[1]), ylab = expression(mu[2]), col = heat.colors(250))
-contour(mu_1, mu_2, like, levels = seq(min(like), max(like), 100), add = TRUE, drawlabels = FALSE, legend = "gibbs1")
-points(test_$mu, pch = ".")
-
-
-
-
-
-
-
-
-bn <- 1000
 
 
 
