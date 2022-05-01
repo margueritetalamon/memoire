@@ -37,11 +37,10 @@ gibbs <- function(n_gibbs, x, K, gamma, s, l, eps, v, mu0, p0, sig0) {
   like <- rep(0, n_gibbs + 1)
   like[1] <- loglikelihood_mm(x, p[1, ], mu[1, ], sig[1, ])
   z <- rep(0, length(x))
-  me <- c(0, 0)
-  ve <- c(0, 0)
-  var_b <- c(0, 0)
+  me <- rep(0,K)
+  ve <- rep(0,K)
+  var_b <- rep(0,K)
   n <- rep(0, K)
-  n[1, ] <- p0 * length(x)
   for (t in 1:n_gibbs) {
     for (i in 1:length(x)) {
       u[, i] <- p[t, ] * dnorm(x[i], mu[t, ], sqrt(sig[t, ]))
