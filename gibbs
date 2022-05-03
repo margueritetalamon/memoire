@@ -1,107 +1,86 @@
 rm(list = ls())
 
-library("invgamma")
-library("dirmult")
-library("combinat")
 
-
-
-rmixtmod <- function(n, p, mu, sigma) {
-  # Générateur de n réalisations d'un modèle de mélange gaussien de paramètres p,mu,sigma(variance)
-  z <- sample(c(1:length(p)), n, replace = TRUE, prob = p)
-  return(list(x = rnorm(n, mu[z], sqrt(sigma[z])), z = z))
+rmixtmod <- function(n,p,mu, sigma) {
+  #Générateur de modèles de mélange
+  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
+  return(list(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
 }
 
 
-dmixtmod <- function(x, p, mu, sig) {
-  # densité d'un modèle de mélange gaussien de paramètres p,mu,sigma ; x peut-être un réel un vecteur ou une matrice
-  return(colSums(p * sapply(x, dnorm, mu, sqrt(sig))))
-}
+melange <- gen3_mix(1000,c(0.3,0.7),c(0,2.5),c(1,1))
 
 
-loglikelihood_mm <- function(x, p, mu, sigma) {
-  # calcul de la log-vraisemblance d'un modèle de mélange gaussien de paramètres p,mu,sigma pour les observations x
-  return(sum(log(sapply(x, dmixtmod, p, mu, sigma))))
-}
-
-
-gibbs <- function(n_gibbs, x, K, gamma, s, l, eps, v, mu0, p0, sig0) {
-  # algorithme de Gibbs
-  p <- matrix(0, n_gibbs + 1, K)
-  mu <- matrix(0, n_gibbs + 1, K)
-  sig <- matrix(0, n_gibbs + 1, K)
-  p[1, ] <- p0
-  mu[1, ] <- mu0
-  sig[1, ] <- sig0
-  u <- matrix(0, K, length(x)) # matrice de proba
-  like <- rep(0, n_gibbs + 1)
-  like[1] <- loglikelihood_mm(x, p[1, ], mu[1, ], sig[1, ])
-  z <- rep(0, length(x))
+gibbs <- function(n_gibbs,x,K,gamma,s,l,eps,v,mu0,p0,sig0){
+  p <- matrix(0,n_gibbs+1,K)
+  mu <- matrix(0,n_gibbs+1,K)
+  sig <- matrix(0,n_gibbs+1,K)
+  p[1,]<- p0
+  mu[1,] <- mu0
+  sig[1,] <- sig0
+  u <- matrix(0,K,length(x)) #matrice de proba
+  like <- rep(0,n_gibbs+1)
+  #like[1] <- loglikelihood_mm(x,p[1,],mu[1,],sig[1,])
+  z <- rep(0,length(x))
   me <- rep(0,K)
   ve <- rep(0,K)
   var_b <- rep(0,K)
-  n <- rep(0, K)
-  for (t in 1:n_gibbs) {
-    for (i in 1:length(x)) {
-      u[, i] <- p[t, ] * dnorm(x[i], mu[t, ], sqrt(sig[t, ]))
-      z[i] <- sample(1:K, size = 1, replace = TRUE, prob = u[, i])
+  n <- rep(0,K)
+  for (t in 1:n_gibbs){
+    for (i in 1:length(x)){
+      u[,i] <- p[t,]*dnorm(x[i],mu[t,],sqrt(sig[t,]))
+      z[i] <- sample(1:K,size = 1,replace=TRUE,prob = u[,i])
     }
     n[as.numeric(levels(as.factor(z)))] <- table(z)
-    p[t + 1, ] <- rdirichlet(1, gamma + n)
-    for (j in 1:K) {
-      me[j] <- ((mean(x[z == j]) * n[j]) + (l[j] * eps[j])) / (l[j] + n[j])
-      var_b[j] <- mean(x[z == j]^2) - mean(x[z == j])^2
-      ve[j] <- s[j] + n[j] * var_b[j] + (l[j] * n[j] * (eps[j] - mean(x[z == j]))^2) / (n[j] + l[j])
-      if (sum(z == j) == 0) {
-        me <- eps[j]
-        ve <- s[j]
+    p[t+1,] <- rdirichlet(1,gamma+n)
+    for (j in 1:K){
+      me[j] <- ((mean(x[z==j])*n[j])+(l[j]*eps[j]))/(l[j]+n[j])
+      var_b[j] <- mean(x[z==j]^2)-mean(x[z==j])^2
+      ve[j] <- s[j] + n[j]*var_b[j] + (l[j]*n[j]*(eps[j]-mean(x[z==j]))^2)/(n[j]+l[j])
+      if (sum(z==j)==0){
+         me <- eps[j]
+         ve <- s[j]
       }
-      mu[t + 1, ] <- rnorm(K, me, sqrt(sig[t, ] / (n + l)))
-      sig[t + 1, ] <- rinvgamma(K, (v + n) / 2, ve / 2)
-      like[t + 1] <- loglikelihood_mm(x, p[t + 1, ], mu[t + 1, ], sig[t + 1, ])
+    mu[t+1,] <- rnorm(K,me,sqrt(sig[t,]/(n+l)))
+    sig[t+1,] <- rinvgamma(K,(v+n)/2,ve/2)
+    like[t+1] <- loglikelihood_mm(x,p[t+1,],mu[t+1,],sig[t+1,])
     }
   }
-  return(list(p = p, mu = mu, sig = sig, like = like))
+  return(list(p=p,mu=mu,sig=sig,like=like))
+  
 }
 
 
 
+K <- 2
+gamma <- rep(1/(K+1),K)
+s <- 2*rep(var(melange$x),K) #a definir
+l <- rep(1,K) #a definir
+eps <- rep(mean(melange$x),K) #a definir
+v <- rep(20,K)
+p0<- rep(1/K,K)
+mu0 <- c(5,1.5)
+sig0 <- rep(1,K)
+n_gibbs <- 10000
+test_ <-gibbs(n_gibbs,melange$x,K,gamma,s,l,eps,v,mu0,p0,sig0)
 
-pivotal_reordering <- function(x, x_gibbs) {
-  # Algorithme de pivotal reordering
-  indice <- order(x_gibbs$post, decreasing = TRUE)[1]
-  K <- ncol(x_gibbs$p)
-  n_gibbs <- nrow(x_gibbs$p)
-  ormu <- matrix(0, n_gibbs, K)
-  orsig <- matrix(0, n_gibbs, K)
-  orp <- matrix(0, n_gibbs, K)
-  pz_etoile <- matrix(0, n_gibbs, K)
-  p_tau <- matrix(0, n_gibbs, K)
-  perma <- permn(1:K) # toutes les combinaisons de permutations 1:k
-  entropy <- rep(0, factorial(K))
-  pz_etoile <- t(x_gibbs$p[indice, ] * sapply(x, dnorm, x_gibbs$mu[indice, ], sqrt(x_gibbs$sig[indice, ])))
-  pz_etoile <- pz_etoile / rowSums(pz_etoile)
-  for (t in 1:n_gibbs) {
-    p_tau <- t(x_gibbs$p[t, ] * sapply(x, dnorm, x_gibbs$mu[t, ], sqrt(x_gibbs$sig[t, ])))
-    p_tau <- p_tau / rowSums(p_tau)
 
-    for (j in 1:factorial(K)) {
-      entropy[j] <- sum(colSums(pz_etoile * log(pz_etoile / p_tau[, perma[[j]]])))
-    }
-    ordre <- order(entropy, decreasing = TRUE)[factorial(K)]
-    ormu[t, ] <- x_gibbs$mu[t, perma[[ordre]]]
-    orsig[t, ] <- x_gibbs$sig[t, perma[[ordre]]]
-    orp[t, ] <- x_gibbs$p[t, perma[[ordre]]]
-  }
-  return(list(mu = ormu, sig = orsig, p = orp))
+
+dmixtmod <- function(x,p,mu,sig){
+  return(colSums(p*sapply(x,dnorm,mu,sqrt(sig))))
+}
+
+
+loglikelihood_mm <-function(x,p,mu,sigma){
+  return(sum(log(sapply(x,dmixtmod,p,mu,sigma))))
 }
 
 
 
-dtest <- function(mu_1, mu_2, x, p, sig) {
+dtest <- function(mu_1, mu_2, x){
   output <- 0
-  for (i in 1:length(x)) {
-    output <- output + log(p * dnorm(x[i], mu_1, sqrt(sig[1])) + (1 - p) * dnorm(x[i], mu_2, sqrt(sig[2]))) # proprotions à adapter
+  for(i in 1:length(x)) {
+    output <- output + log(.7*dnorm(x[i], mu_1) + 0.3*dnorm(x[i], mu_2)) #proprotions à adapter
   }
   return(output)
 }
@@ -111,6 +90,3 @@ dtest <- function(mu_1, mu_2, x, p, sig) {
 
 
 
-
-
-melange <- rmixtmod(1000, c(0.3, 0.7), c(0, 2.5), c(1, 1))
