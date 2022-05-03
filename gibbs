@@ -41,10 +41,11 @@ gibbs <- function(n_gibbs,x,K,gamma,s,l,eps,v,mu0,p0,sig0){
          me <- eps[j]
          ve <- s[j]
       }
+     }
     mu[t+1,] <- rnorm(K,me,sqrt(sig[t,]/(n+l)))
     sig[t+1,] <- rinvgamma(K,(v+n)/2,ve/2)
     like[t+1] <- loglikelihood_mm(x,p[t+1,],mu[t+1,],sig[t+1,])
-    }
+    
   }
   return(list(p=p,mu=mu,sig=sig,like=like))
   
