@@ -1,0 +1,186 @@
+rm(list=ls())
+
+install.packages("invgamma")
+library("invgamma")
+
+install.packages("statip")
+library("statip")
+
+install.packages("cubature")
+library("cubature")
+
+install.packages("gtools")
+library("gtools")
+
+install.packages("mnormt")
+library("mnormt")
+
+install.packages("tmvtnorm")
+library("tmvtnorm")
+
+install.packages("foreach")
+library("foreach")
+
+set.seed(200)
+
+nor<-function(x, p, mu, s){
+  return(p*dnorm(x, mu, s))
+}
+
+dg_mixt <- function(x,p,mu,sig){
+  y<-sapply(x, nor, p=p, mu=mu, s=sig)
+  return(colSums(y))
+}
+
+
+rdirich_inv<-function(n_left,prob,index,delta,K,p){
+  prob_temp<-prob[index,]
+  z_temp<-rgamma(n_left,sum(delta),1)
+  b_temp<-matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
+  eta_temp<-matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
+  prob_prop<-z_temp*b_temp*prob_temp+eta_temp
+  return(prob_prop/rowSums(prob_prop))
+}
+
+label_switching<-function(mu,prob){
+  
+  mu_ref<-rowMeans(pnorm(mu,mean(mu),sd(mu)))
+  prob_ref<-rowMeans(pnorm(prob,mean(prob),sd(prob)))
+  
+  i<-which.max(c(max(dist(mu_ref)), max(dist(prob_ref))))
+  
+  
+  if (i==1){
+    ord<-order(mu)
+  }
+  if (i==2){
+    ord<-order(prob)
+  }
+  return(list(mu=matrix(mu[ord],nrow=nrow(mu)),
+              prob=matrix(prob[ord],nrow=nrow(prob))))
+}
+
+colprod<-function(x){
+  M<-rep(0,nrow(x))
+  for (i in 1:nrow(x)){
+    M[i]<-prod(x[i,])
+  }
+  return(M)
+}
+
+
+weight_t<-function(mu_t,W,mu,tau_mu,
+                   sig=rep(1,K),
+                   xbar=rep(0,K),
+                   l=rep(0.1,K)){
+  q<-as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu))
+  M<-t(as.matrix(W))
+  L_t<-M%*%q
+  num_t<-colprod(t(apply(mu_t,1,dnorm,xbar,sqrt(sig/l))))
+  return(as.vector(num_t/L_t))
+}
+
+
+gen3_mix <- function(n,p,mu,sigma) {
+  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)   
+  return(rnorm(n,mu[z],sqrt(sigma[z])))
+}
+
+x<-gen3_mix(40,c(0.5,0.5),c(2,-2),c(1,1))
+
+
+
+#x<-c(rnorm(20,-2,1),rnorm(20,2,1))
+
+K<-2 #nombre de composantes
+N<-100 #nombre d'échantillons simulés
+n_iter<- 50 #nombre d'itérations
+N_init<- 5*N #nombre d'échantillons premiere itération
+
+
+
+abc<-function(n_iter,N_init,N,K,x,
+              sig=rep(1,K),
+              q=0.5,
+              p=0.5,
+              xbar=rep(0,K),
+              l=rep(0.1,K),
+              delta=rep(1,K)){
+  
+  
+  
+  #Initialisation
+  f_obs<-densityfun(x)
+  
+  rho<-rep(0,N_init)
+  prob<-rdirichlet(N_init,delta) 
+  mu<-matrix(rnorm(K*N_init,xbar,sqrt(sig/l)),ncol=K)
+  
+  rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
+    f_prop <- statip::densityfun(gen3_mix(40,prob[i,],mu[i,],sig))
+    cubature::cubintegrate(function(x){
+      (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+    }, -Inf, Inf)$integral
+  }
+  
+  rho<-sqrt(0.5*rho)
+  keep<-order(rho)[seq_len(N)]
+  rho<-rho[keep]
+  mu<-mu[keep,]
+  prob<-prob[keep,]
+  W<-rep(1/N,N)
+  
+  #Traiter le problème du Label Switching
+  switch<-label_switching(mu,prob)
+  mu<-switch$mu
+  prob<-switch$prob
+  
+  
+  rho_t<-rep(0,N)
+  
+  prob_t<-matrix(0,N,K)
+  mu_t<-matrix(0,N,K)
+  
+  for (t in 2:n_iter){
+    eps<-quantile(rho,q)
+    tau_mu<-2*cov(mu)
+    n_left<-N
+    while(n_left>0){
+      index<-sample(1:N,n_left,TRUE,W/sum(W))
+      prob_prop<-rdirich_inv(n_left,prob,index,delta,K,p)
+      mu_prop<-mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
+
+      
+      rho_prop<-foreach (i= seq_len(n_left), .combine =c) %dopar% { 
+        f_prop <- statip::densityfun(gen3_mix(40,prob_prop[i,],mu_prop[i,],sig))
+        cubature::cubintegrate(function(x){
+          (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+        }, -Inf, Inf)$integral
+      }
+      rho_prop<-sqrt(0.5*rho_prop)
+      keep<-(rho_prop <= eps)
+      batch <- (N - n_left) + seq_len(sum(keep))
+      rho_t[batch]<-rho_prop[keep]
+      mu_t[batch,]<-mu_prop[keep,]
+      prob_t[batch,]<-prob_prop[keep,]
+      
+      
+      
+      n_left<-n_left - sum(keep)
+      
+    }
+    #Mise à jour du vecteur des probabilités
+    W<-weight_t(mu_t,W,mu,tau_mu)
+    
+    #Traiter le label switching
+    switch_t<-label_switching(mu_t,prob_t)
+    
+    mu<-switch_t$mu  
+    prob<-switch_t$prob
+    
+  }
+  return(list(prob=prob,mu=mu))
+}
+
+
+output_ABC<- abc(n_iter,N_init,N,K,x)
