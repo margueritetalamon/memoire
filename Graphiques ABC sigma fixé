@@ -1,3 +1,44 @@
+rm(list=ls())
+
+install.packages("invgamma")
+library("invgamma")
+
+install.packages("statip")
+library("statip")
+
+install.packages("cubature")
+library("cubature")
+
+install.packages("gtools")
+library("gtools")
+
+install.packages("mnormt")
+library("mnormt")
+
+install.packages("tmvtnorm")
+library("tmvtnorm")
+
+install.packages("foreach")
+library("foreach")
+
+
+nor<-function(x, p, mu, s){
+  return(p*dnorm(x, mu, s))
+}
+#Fonction permettant de calculer la densité d'un modèle de mélange
+dg_mixt <- function(x,p,mu,sig){
+  y<-sapply(x, nor, p=p, mu=mu, s=sig)
+  return(colSums(y))
+}
+#Fonction peremettant de simuler un modèle de mélange gaussien, de taille n,
+#de vecteur de probabilités p, de vecteur de moyenne mu, de vecteur de variance sigma
+gen3_mix <- function(n,p,mu,sigma) {
+  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)   
+  return(rnorm(n,mu[z],sqrt(sigma[z])))
+}
+
+x<-gen3_mix(40,c(0.5,0.5),c(1,2.5),c(1,1))
+
 K<-2 #nombre de composantes
 N<-100 #nombre d'échantillons simulés
 n_iter<- 50 #nombre d'itérations
