@@ -23,14 +23,7 @@ library("foreach")
 
 set.seed(200)
 
-nor<-function(x, p, mu, s){
-  return(p*dnorm(x, mu, s))
-}
 
-dg_mixt <- function(x,p,mu,sig){
-  y<-sapply(x, nor, p=p, mu=mu, s=sig)
-  return(colSums(y))
-}
 
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
 rdirich_inv<-function(n_left,prob,index,delta,K,p){
