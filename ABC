@@ -79,17 +79,12 @@ weight_t<-function(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig,
   return(as.vector(num_t/L_t))
 }
 
-#Fonction permettant de simuler un modèle de mélange gaussien, avec n le nombre d'échantillons, p le vecteur des probabilités,
-#mu le vecteur des moyennes, sigma le vecteur des variances
-gen3_mix <- function(n,p,mu, sigma) {
-  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
-  return(rnorm(n,mu[z],sqrt(sigma[z])))
-}
-
-x<-gen3_mix(100,c(0.3,0.7),c(0,2.5),c(1,1))
 
 
-
+#Algorithme ABC pour un modèle de mélange gaussien à K composantes, 
+#Prior pour p : dirichlet(delta)
+#Prior pour mu: N(xbar,sig/l)
+#Prior pour sig : InvGamma(0.5*v,s_k)
 abc<-function(n_iter,N_init,N,K,x,
              q=0.5,
              p=0.5,
