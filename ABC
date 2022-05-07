@@ -21,7 +21,7 @@ library("tmvtnorm")
 install.packages("foreach")
 library("foreach")
 
-
+#Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
 rdirich_inv<-function(n_left,prob,index,delta,K,p){
   prob_temp<-prob[index,]
   z_temp<-rgamma(n_left,sum(delta),1)
@@ -30,13 +30,13 @@ rdirich_inv<-function(n_left,prob,index,delta,K,p){
   prob_prop<-z_temp*b_temp*prob_temp+eta_temp
   return(prob_prop/rowSums(prob_prop))
 }
-
+#Fonction permettant de traiter le label switching
 label_switching<-function(mu,sig,prob){
-  
+  #Calcul des valeurs représentatives
   mu_ref<-rowMeans(pnorm(mu,mean(mu),sd(mu)))
   sig_ref<-sqrt(rowMeans(pnorm(sig^2,mean(sig^2),sd(sig^2))))
   prob_ref<-rowMeans(pnorm(prob,mean(prob),sd(prob)))
-  
+  #Selection de la variable qui présente le plus grand écart entre deux de ses valeurs représentatives
   i<-which.max(c(max(dist(mu_ref)), max(dist(sig_ref)), max(dist(prob_ref))))
   
   
@@ -49,11 +49,12 @@ label_switching<-function(mu,sig,prob){
   if (i==3){
     ord<-order(prob)
   }
+  #On retourne les paramètres triés selon l'odre du paramètre séléctionné
   return(list(mu=matrix(mu[ord],nrow=nrow(mu)),
               sig=matrix(sig[ord],nrow=nrow(sig)),
               prob=matrix(prob[ord],nrow=nrow(prob))))
 }
-
+#Permet de calculer le produit des colonnes d'une matrice
 colprod<-function(x){
   M<-rep(0,nrow(x))
   for (i in 1:nrow(x)){
@@ -62,32 +63,30 @@ colprod<-function(x){
   return(M)
 }
 
-
+#Fonction qui calcule la mise a jour des poids W
 weight_t<-function(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig,
                    xbar=rep(mean(x),K),
                    v=rep(20,K),
                    s_k=rep(var(x),K),
                    l=rep(1,K)){
   sd_mu<- sqrt(rinvgamma(K,0.5*v,s_k))/l
+  #Calcul du dénominateur de la formule
   q<-as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu)*apply(sig_t,1,dtmvnorm,x=sig,sigma=tau_sig,lower=c(0,0)))
   M<-t(as.matrix(W))
   L_t<-M%*%q
+  #Calcul du numérateur de la formule
   num_t<-colprod(t(apply(mu_t,1,dnorm,xbar,sd_mu)*apply(sig_t^2,1,dinvgamma,0.5*v,s_k)))
   return(as.vector(num_t/L_t))
 }
 
-
+#Fonction permettant de simuler un modèle de mélange gaussien, avec n le nombre d'échantillons, p le vecteur des probabilités,
+#mu le vecteur des moyennes, sigma le vecteur des variances
 gen3_mix <- function(n,p,mu, sigma) {
   z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
   return(rnorm(n,mu[z],sqrt(sigma[z])))
 }
 
 x<-gen3_mix(100,c(0.3,0.7),c(0,2.5),c(1,1))
-
-K<-2 #nombre de composantes
-N<-500 #nombre d'échantillons simulés
-n_iter<- 100 #nombre d'itérations
-N_init<- 5*N #nombre d'échantillons premiere itération
 
 
 
@@ -103,6 +102,7 @@ abc<-function(n_iter,N_init,N,K,x,
 
 
   #Initialisation
+  #Calcul de la densité estimé de l'échantillon observé
   f_obs<-densityfun(x)
   
   rho<-rep(0,N_init)
@@ -110,7 +110,9 @@ abc<-function(n_iter,N_init,N,K,x,
   sig<-matrix(sqrt(rinvgamma(K*N_init,0.5*v,s_k)),nrow=N_init)
   mu<-t(xbar + matrix(rnorm(K*N_init),K)*t(sig)/l)
   
+  #Calcul de la distance de hellinger 
   rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
+  #Calcul de la densité de l'échantillon simulé
     f_prop <- statip::densityfun(gen3_mix(100,prob[i,],mu[i,],sig[i,]))
     cubature::cubintegrate(function(x){
       (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
@@ -118,6 +120,8 @@ abc<-function(n_iter,N_init,N,K,x,
   }
   
   rho<-sqrt(0.5*rho)
+  
+  #On garde les N composantes correspondant aux N plus petites distances
   keep<-order(rho)[seq_len(N)]
   rho<-rho[keep]
   mu<-mu[keep,]
@@ -143,13 +147,16 @@ abc<-function(n_iter,N_init,N,K,x,
     tau_mu<-2*cov(mu)
     tau_sig_2<-2*cov(sig^2)
     n_left<-N
+    #Simulation N nouveaux échantillons, n_left est le nombre d'échantillons manquants
     while(n_left>0){
+      #On séléctionne n_left composantes parmis les N composantes précédentes
       index<-sample(1:N,n_left,TRUE,W/sum(W))
+      #Mise à jour les n_left paramètres correspondants 
       prob_prop<-rdirich_inv(n_left,prob,index,delta,K,p)
       mu_prop<-mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
       sig_prop<-matrix(1,n_left,K)
       sig_prop<-sig[index,]^2+rtmvnorm(n_left,rep(0,K),tau_sig_2,lower=rep(0,K))
-    
+      #Calcul des distances de Hellignger pour ses composantes
       rho_prop<-foreach (i= seq_len(n_left), .combine =c) %dopar% { 
         f_prop <- statip::densityfun(gen3_mix(100,prob_prop[i,],mu_prop[i,],sig_prop[i,]))
         cubature::cubintegrate(function(x){
@@ -157,8 +164,10 @@ abc<-function(n_iter,N_init,N,K,x,
         }, -Inf, Inf)$integral
       }
       rho_prop<-sqrt(0.5*rho_prop)
+      #On retient que les composantes pour lesquels la distance est inférieure au seuil de tolérance
       keep<-(rho_prop <= eps)
       batch <- (N - n_left) + seq_len(sum(keep))
+      #On remplie la matrice des échantillons 
       rho_t[batch]<-rho_prop[keep]
       mu_t[batch,]<-mu_prop[keep,]
       sig_t[batch,]<-sig_prop[keep,]
@@ -183,4 +192,3 @@ abc<-function(n_iter,N_init,N,K,x,
   return(list(prob=prob,mu=mu,sig=sig))
 }
 
-output_ABC<- abc(n_iter,N_init,N,K,x)
