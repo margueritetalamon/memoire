@@ -45,7 +45,7 @@ n_iter<- 50 #nombre d'itérations
 N_init<- 5*N #nombre d'échantillons premiere itération
 
 
-output_ABC<- abc(n_iter,N_init,N,K,x)
+output_ABC<- abc_fix(n_iter,N_init,N,K,x)
 
 #Histogramme de mu_1
 hist(as.vector(output_ABC$mu[,1]),breaks=20,freq=FALSE,main='',xlab='',col='lightcyan3',ylim=c(0,1),xlim=c(-4,4))
