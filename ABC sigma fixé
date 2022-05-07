@@ -78,8 +78,11 @@ weight_t<-function(mu_t,W,mu,tau_mu,
 
 
 
-
-abc<-function(n_iter,N_init,N,K,x,
+#Algorithme ABC pour un modèle de mélange gaussien à K composantes, 
+#Prior pour p : dirichlet(delta)
+#Prior pour mu: N(xbar,sig/l)
+#Sigma fixé
+abc_fix<-function(n_iter,N_init,N,K,x,
               sig=rep(1,K),
               q=0.5,
               p=0.5,
