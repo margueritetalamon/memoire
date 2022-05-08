@@ -1,29 +1,3 @@
-rm(list=ls())
-
-install.packages("invgamma")
-library("invgamma")
-
-install.packages("statip")
-library("statip")
-
-install.packages("cubature")
-library("cubature")
-
-install.packages("gtools")
-library("gtools")
-
-install.packages("mnormt")
-library("mnormt")
-
-install.packages("tmvtnorm")
-library("tmvtnorm")
-
-install.packages("foreach")
-library("foreach")
-
-set.seed(200)
-
-
 
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
 rdirich_inv<-function(n_left,prob,index,delta,K,p){
