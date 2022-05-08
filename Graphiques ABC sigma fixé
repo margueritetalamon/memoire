@@ -21,11 +21,16 @@ library("tmvtnorm")
 install.packages("foreach")
 library("foreach")
 
+set.seed(203)
 
 nor<-function(x, p, mu, s){
-  return(p*dnorm(x, mu, s))
+  return(p*dnorm(x, mu, sqrt(s)))
 }
-#Fonction permettant de calculer la densité d'un modèle de mélange
+#Fonction permettant de calculer la densité d'un modèle de mélange 
+#de vecteur de probabilités p
+#de vecteur des moyennes mu
+#de vecteur de variance sig,
+#pour un vecteur x.
 dg_mixt <- function(x,p,mu,sig){
   y<-sapply(x, nor, p=p, mu=mu, s=sig)
   return(colSums(y))
@@ -36,18 +41,17 @@ gen3_mix <- function(n,p,mu,sigma) {
   z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)   
   return(rnorm(n,mu[z],sqrt(sigma[z])))
 }
-
-x<-gen3_mix(40,c(0.5,0.5),c(1,2.5),c(1,1))
-
+n<-500 #taille du vecteur d'observations 
 K<-2 #nombre de composantes
-N<-100 #nombre d'échantillons simulés
+N<-300 #nombre d'échantillons simulés
 n_iter<- 50 #nombre d'itérations
 N_init<- 5*N #nombre d'échantillons premiere itération
 
+x<-gen3_mix(n,c(0.7,0.3),c(0,2.5),c(1,1))
 
-output_ABC<- abc_fix(n_iter,N_init,N,K,x)
+output_ABC<- abc_fix(n_iter,N_init,N,K,n,x)
 
 #Histogramme de mu_1
-hist(as.vector(output_ABC$mu[,1]),breaks=20,freq=FALSE,main='',xlab='',col='lightcyan3',ylim=c(0,1),xlim=c(-4,4))
+hist(as.vector(output_ABC$mu[,1]),breaks=10,freq=FALSE,col='lightcyan3',main='',xlim=c(-3,5),xlab='',ylim=c(0,1))
 #Histogramme de mu_2
-hist(as.vector(output_ABC$mu[,2]),breaks=20,freq=FALSE,main='',xlab='',col='springgreen3',ylim=c(0,1),xlim=c(-4,4))
+hist(as.vector(output_ABC$mu[,2]),breaks=5,freq=FALSE,col='darkseagreen3',main='',xlim=c(-3,5),xlab='',ylim=c(0,1))
