@@ -39,8 +39,8 @@ colprod<-function(x){
 #Fonction qui calcule la mise a jour des poids W
 weight_t<-function(mu_t,W,mu,tau_mu,
                    sig=rep(1,K),
-                   xbar=rep(0,K),
-                   l=rep(0.1,K)){
+                   xbar=c(0,2),
+                   l=rep(0.25,K)){
   #Calcul du dénominateur de la formule
   q<-as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu))
   M<-t(as.matrix(W))
@@ -56,12 +56,12 @@ weight_t<-function(mu_t,W,mu,tau_mu,
 #Prior pour p : dirichlet(delta)
 #Prior pour mu: N(xbar,sig/l)
 #Sigma fixé
-abc_fix<-function(n_iter,N_init,N,K,x,
+abc_fix<-function(n_iter,N_init,N,K,n,x,
               sig=rep(1,K),
               q=0.5,
               p=0.5,
-              xbar=rep(0,K),
-              l=rep(0.1,K),
+              xbar=c(0,2),
+              l=rep(0.25,K),
               delta=rep(1,K)){
   
   
@@ -76,7 +76,7 @@ abc_fix<-function(n_iter,N_init,N,K,x,
   #Calcul de la distance de hellinger 
   rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
   #Calcul de la densité de l'échantillon simulé
-    f_prop <- statip::densityfun(gen3_mix(40,prob[i,],mu[i,],sig))
+    f_prop <- statip::densityfun(gen3_mix(n,prob[i,],mu[i,],sig))
     cubature::cubintegrate(function(x){
       (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
     }, -Inf, Inf)$integral
@@ -117,7 +117,7 @@ abc_fix<-function(n_iter,N_init,N,K,x,
       #Calcul des distances de Hellignger pour ses composantes
       
       rho_prop<-foreach (i= seq_len(n_left), .combine =c) %dopar% { 
-        f_prop <- statip::densityfun(gen3_mix(40,prob_prop[i,],mu_prop[i,],sig))
+        f_prop <- statip::densityfun(gen3_mix(n,prob_prop[i,],mu_prop[i,],sig))
         cubature::cubintegrate(function(x){
           (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
         }, -Inf, Inf)$integral
