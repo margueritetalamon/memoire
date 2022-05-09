@@ -1,4 +1,3 @@
-rm(list = ls())
 
 library("invgamma")
 library("dirmult")
@@ -22,7 +21,7 @@ gibbs <- function(n_gibbs,x,gamma,s,l,eps,v,mu0,p0,sig0){ #n_gibbs est le nombre
   p[1,]<- p0
   mu[1,] <- mu0
   sig[1,] <- sig0
-  like[1] <- loglikelihood_mm(x,p[1,],mu[1,],sig[1,])
+  like[1] <- loglikelyhood_mixtmod(x,p[1,],mu[1,],sig[1,])
   
   u <- matrix(0,K,length(x)) #matrice de proba
   z <- rep(0,length(x))
@@ -42,10 +41,10 @@ gibbs <- function(n_gibbs,x,gamma,s,l,eps,v,mu0,p0,sig0){ #n_gibbs est le nombre
       var_b[j] <- mean(x[z==j]^2)-mean(x[z==j])^2
       ve[j] <- s[j] + n[j]*var_b[j] + (l[j]*n[j]*(eps[j]-mean(x[z==j]))^2)/(n[j]+l[j])
       if (sum(z==j)==0){ #condition si il n'y a plus la composante j representée dans la matrice z
-         me <- eps[j]
-         ve <- s[j]
+        me <- eps[j]
+        ve <- s[j]
       }
-     }
+    }
     mu[t+1,] <- rnorm(K,me,sqrt(sig[t,]/(n+l)))
     sig[t+1,] <- rinvgamma(K,(v+n)/2,ve/2)
     like[t+1] <- loglikelyhood_mixtmod(x,p[t+1,],mu[t+1,],sig[t+1,])
@@ -81,7 +80,7 @@ loglikelyhood_psig_fix <- function(mu_1, mu_2, x){
 
 
 pivotal_reordering<-function(x,x_gibbs){ #Algorithme de pivotal reordering, x est l'échantillon, x_gibbs sont les simulation des paramètres de gibbs
-
+  
   indice <- order(x_gibbs$like,decreasing = TRUE)[1]
   K <- ncol(x_gibbs$p)
   n_gibbs <- nrow(x_gibbs$p)
@@ -107,7 +106,3 @@ pivotal_reordering<-function(x,x_gibbs){ #Algorithme de pivotal reordering, x es
   }
   return(list(mu_ordo=ormu,sig_ordo=orsig,p_ordo=orp))
 }
-
-
-
-
