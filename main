@@ -31,10 +31,10 @@ points(3,2,pch=16,col='green4')
 
 
 #illustration bonne convergence
-em_cv <- est_EM(melange_1, n_em, epsilon, c(0.5), c(1,1.5), c(2,2))
-plot_traj(em_cv,p)
-plot_traj(em_cv,mu)
-plot_traj(em_cv,sig)
+em_cv <- est_EM(melange_1$x, n_em, epsilon, c(0.5,0.5), c(1,1.5), c(2,2))
+plot_traj_mu(em_cv)
+plot_traj_sig(em_cv)
+plot_traj_p(em_cv)
 
 
 
