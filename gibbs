@@ -57,8 +57,6 @@ gibbs <- function(n_gibbs,x,gamma,s,l,eps,v,mu0,p0,sig0){ #n_gibbs est le nombre
 
 
 
-
-
 dmixtmod <- function(x,p,mu,sig){
   #calcul la densité d'un modèle de mélange, x peut etre un reel un vecteur ou une matrice
   return(colSums(p*sapply(x,dnorm,mu,sqrt(sig))))
@@ -82,7 +80,8 @@ loglikelyhood_psig_fix <- function(mu_1, mu_2, x){
 }
 
 
-pivotal_reordering<-function(x,x_gibbs){
+pivotal_reordering<-function(x,x_gibbs){ #Algorithme de pivotal reordering, x est l'échantillon, x_gibbs sont les simulation des paramètres de gibbs
+
   indice <- order(x_gibbs$like,decreasing = TRUE)[1]
   K <- ncol(x_gibbs$p)
   n_gibbs <- nrow(x_gibbs$p)
