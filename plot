@@ -46,11 +46,21 @@ plot_hist_mu_marg <- function(sim_gibbs){
 }
 
 
-plot_traj <- function(estimation,param){
-  plot(estimation$param[,1],type='l',col='royalblue4',main='',xlab='nombre d\'itérations',ylab=expression(param[j]),lwd=2)
-  lines(estimation$param[,2],type='l',col='springgreen3')
-  legend("bottomleft",legend=c(expression(param[1]),expression(param[2])),lty =c(1,1),col=c("royalblue4","springgreen3"),lwd=c(2,2))
+plot_traj_mu <- function(estimation){
+  plot(estimation$mu[,1],type='l',col='royalblue4',main='',xlab='nombre d\'itérations',ylab=expression(mu[j]),lwd=2)
+  lines(estimation$mu[,2],type='l',col='springgreen3')
+  legend("bottomleft",legend=c(expression(mu[1]),expression(mu[2])),lty =c(1,1),col=c("royalblue4","springgreen3"),lwd=c(2,2))
 }
 
+plot_traj_p <- function(estimation){
+  plot(estimation$p[,1],type='l',col='royalblue4',main='',xlab='nombre d\'itérations',ylab=expression(p[j]),lwd=2)
+  lines(estimation$p[,2],type='l',col='springgreen3')
+  legend("bottomleft",legend=c(expression(p[1]),expression(p[2])),lty =c(1,1),col=c("royalblue4","springgreen3"),lwd=c(2,2))
+}
 
+plot_traj_sig <- function(estimation){
+  plot(estimation$sig[,1],type='l',col='royalblue4',main='',xlab='nombre d\'itérations',ylab=expression(sig[j]),lwd=2)
+  lines(estimation$sig[,2],type='l',col='springgreen3')
+  legend("bottomleft",legend=c(expression(sig[1]),expression(sig[2])),lty =c(1,1),col=c("royalblue4","springgreen3"),lwd=c(2,2))
+}
 
