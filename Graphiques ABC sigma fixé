@@ -23,31 +23,32 @@ library("foreach")
 
 set.seed(203)
 
-nor<-function(x, p, mu, s){
-  return(p*dnorm(x, mu, sqrt(s)))
-}
 #Fonction permettant de calculer la densité d'un modèle de mélange 
 #de vecteur de probabilités p
 #de vecteur des moyennes mu
 #de vecteur de variance sig,
 #pour un vecteur x.
-dg_mixt <- function(x,p,mu,sig){
-  y<-sapply(x, nor, p=p, mu=mu, s=sig)
-  return(colSums(y))
+dmixtmod <- function(x,p,mu,sig){
+  return(colSums(p*sapply(x,dnorm,mu,sqrt(sig))))
 }
-#Fonction peremettant de simuler un modèle de mélange gaussien, de taille n,
+
+
+#Fonction permettant de générer un échantillon d'un modèle de mélange gaussien, de taille n,
 #de vecteur de probabilités p, de vecteur de moyenne mu, de vecteur de variance sigma
-gen3_mix <- function(n,p,mu,sigma) {
-  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)   
-  return(rnorm(n,mu[z],sqrt(sigma[z])))
+#et qui renvoie le vecteur z des classes de x
+rmixtmod <- function(n,p,mu, sigma) {
+  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
+  return(list(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
 }
+
+x<-rmixtmod(n,c(0.7,0.3),c(0,2.5),c(1,1))%x
+
 n<-500 #taille du vecteur d'observations 
 K<-2 #nombre de composantes
 N<-300 #nombre d'échantillons simulés
 n_iter<- 50 #nombre d'itérations
 N_init<- 5*N #nombre d'échantillons premiere itération
 
-x<-gen3_mix(n,c(0.7,0.3),c(0,2.5),c(1,1))
 
 output_ABC<- abc_fix(n_iter,N_init,N,K,n,x)
 
@@ -59,11 +60,11 @@ hist(as.vector(output_ABC$mu[,2]),breaks=5,freq=FALSE,col='darkseagreen3',main='
 a <- seq(-12,12,0.01)
 #Histogramme de l'échantillon observé
 hist(x,freq=FALSE,main='',xlab='',ylim=c(0,0.4), breaks=35)
-#Densités estimées par l'algorithme ABC-PMC grâce à $75$ des $300$ estimations produites
+#Densités estimées par l'algorithme ABC-PMC grâce à 75 des 300 estimations produites
 for (i in 225:300){
-  lines(a,dg_mixt(a,output_ABC$p[i,],output_ABC$mu[i,],c(1,1)),col='lightcyan3',xlim=c(-6,6))
+  lines(a,dmixtmod (a,output_ABC$p[i,],output_ABC$mu[i,],c(1,1)),col='lightcyan3',xlim=c(-6,6))
 }
-#Densité estimée grâce à la moyenne a posteriori des $75$ estimations utilisées
-lines(a,dg_mixt(a,c(mean(output_ABC$p[225:300,1]),mean(output_ABC$p[225:300,2])),c(mean(output_ABC$mu[225:300,1]),
+#Densité estimée grâce à la moyenne a posteriori des 75 estimations utilisées
+lines(a,dmixtmod (a,c(mean(output_ABC$p[225:300,1]),mean(output_ABC$p[225:300,2])),c(mean(output_ABC$mu[225:300,1]),
                 mean(output_ABC$mu[225:300,2])),c(1,1)),lwd=3,col='steelblue',xlim=c(-6,6))
                 
