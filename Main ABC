@@ -1,3 +1,43 @@
+install.packages("invgamma")
+library("invgamma")
+
+install.packages("statip")
+library("statip")
+
+install.packages("cubature")
+library("cubature")
+
+install.packages("gtools")
+library("gtools")
+
+install.packages("mnormt")
+library("mnormt")
+
+install.packages("tmvtnorm")
+library("tmvtnorm")
+
+install.packages("foreach")
+library("foreach")
+
+
+
+#Fonction permettant de calculer la densité d'un modèle de mélange 
+#de vecteur de probabilités p
+#de vecteur des moyennes mu
+#de vecteur de variance sig,
+#pour un vecteur x.
+dmixtmod <- function(x,p,mu,sig){
+  return(colSums(p*sapply(x,dnorm,mu,sqrt(sig))))
+}
+
+
+#Fonction permettant de générer un échantillon d'un modèle de mélange gaussien, de taille n,
+#de vecteur de probabilités p, de vecteur de moyenne mu, de vecteur de variance sigma
+#et qui renvoie le vecteur z des classes de x
+rmixtmod <- function(n,p,mu, sigma) {
+  z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
+  return(list(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
+}
 
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
 
@@ -99,7 +139,7 @@ abc <- function(n_iter,N_init,N,K,n,x,
   #Calcul de la distance de hellinger 
   rho <- foreach (i= seq_len(N_init), .combine =c) %dopar% { 
   #Calcul de la densité de l'échantillon simulé
-    f_p <- statip::densityfun(rgmix(n,prob[i,],mu[i,],sig[i,])$x)
+    f_p <- statip::densityfun(rmixmod(n,prob[i,],mu[i,],sig[i,])$x)
     cubature::cubintegrate(function(x){
       (sqrt(f_obs(x))- sqrt(f_p(x)))^2
     }, -Inf, Inf)$integral
@@ -150,7 +190,7 @@ abc <- function(n_iter,N_init,N,K,n,x,
       #Calcul des distances de Hellignger pour ses composantes
       
       rho_p <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
-        f_p <- statip::densityfun(rgmix(n,prob_prop[i,],mu_prop[i,],sig_prop[i,])$x)
+        f_p <- statip::densityfun(rmixmod(n,prob_prop[i,],mu_prop[i,],sig_prop[i,])$x)
         cubature::cubintegrate(function(x){
           (sqrt(f_obs(x))- sqrt(f_p(x)))^2
         }, -Inf, Inf)$integral
