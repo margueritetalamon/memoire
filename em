@@ -35,7 +35,7 @@ est_EM <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
     mu[t+1,] <- (t(M)%*%x)/N
     Y <- sapply(x,f,mu[t+1,],1:K)
     sig[t+1,]<- sqrt(diag(Y%*%M)/N)
-    like[t+1] <- loglikelihood_mm(x,p[t+1,],mu[t+1,],sqrt(sig[t+1,]))
+    like[t+1] <- loglikelyhood_mixtmod(x,p[t+1,],mu[t+1,],sqrt(sig[t+1,]))
     if (abs(like[t+1]-like[t])<epsilon) {
       #si la vraisemblance ne croit plus "assez" on arrete la fonction
       n_stop <- t 
