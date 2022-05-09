@@ -41,16 +41,16 @@ rmixtmod <- function(n,p,mu, sigma) {
   return(list(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
 }
 
-x<-rmixtmod(n,c(0.7,0.3),c(0,2.5),c(1,1))%x
+x <- rmixtmod(n,c(0.7,0.3),c(0,2.5),c(1,1))$x
 
-n<-500 #taille du vecteur d'observations 
-K<-2 #nombre de composantes
-N<-300 #nombre d'échantillons simulés
-n_iter<- 50 #nombre d'itérations
-N_init<- 5*N #nombre d'échantillons premiere itération
+n <- 500 #taille du vecteur d'observations 
+K <- 2 #nombre de composantes
+N <- 300 #nombre d'échantillons simulés
+n_iter <- 50 #nombre d'itérations
+N_init <- 5*N #nombre d'échantillons premiere itération
 
 
-output_ABC<- abc_fix(n_iter,N_init,N,K,n,x)
+output_ABC <- abc_fix(n_iter,N_init,N,K,n,x)
 
 #Histogramme de mu_1
 hist(as.vector(output_ABC$mu[,1]),breaks=10,freq=FALSE,col='lightcyan3',main='',xlim=c(-3,5),xlab='',ylim=c(0,1))
