@@ -195,7 +195,7 @@ abc <- function(n_iter,N_init,N,K,n,x,
           (sqrt(f_obs(x))- sqrt(f_p(x)))^2
         }, -Inf, Inf)$integral
       }
-      rho_p <- sqrt(0.5*rho_prop)
+      rho_p <- sqrt(0.5*rho_p)
       
       #On retient que les composantes pour lesquels la distance est inférieure au seuil de tolérance
       
