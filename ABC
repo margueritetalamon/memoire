@@ -1,21 +1,26 @@
 
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
-rdirich_inv<-function(n_left,prob,index,delta,K,p){
-  prob_temp<-prob[index,]
-  z_temp<-rgamma(n_left,sum(delta),1)
-  b_temp<-matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
-  eta_temp<-matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
-  prob_prop<-z_temp*b_temp*prob_temp+eta_temp
+
+rdirich_inv <- function(n_left,prob,index,delta,K,p){
+  prob_temp <- prob[index,]
+  z_temp <- rgamma(n_left,sum(delta),1)
+  b_temp <- matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
+  eta_temp <- matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
+  prob_prop <- z_temp*b_temp*prob_temp+eta_temp
   return(prob_prop/rowSums(prob_prop))
 }
+
 #Fonction permettant de traiter le label switching
-label_switching<-function(mu,sig,prob){
+
+label_switching <- function(mu,sig,prob){
   #Calcul des valeurs représentatives
-  mu_ref<-rowMeans(pnorm(mu,mean(mu),sd(mu)))
-  sig_ref<-sqrt(rowMeans(pnorm(sig^2,mean(sig^2),sd(sig^2))))
-  prob_ref<-rowMeans(pnorm(prob,mean(prob),sd(prob)))
+  
+  mu_ref <- rowMeans(pnorm(mu,mean(mu),sd(mu)))
+  sig_ref <- sqrt(rowMeans(pnorm(sig^2,mean(sig^2),sd(sig^2))))
+  prob_ref <- rowMeans(pnorm(prob,mean(prob),sd(prob)))
+  
   #Selection de la variable qui présente le plus grand écart entre deux de ses valeurs représentatives
-  i<-which.max(c(max(dist(mu_ref)), max(dist(sig_ref)), max(dist(prob_ref))))
+  i <- which.max(c(max(dist(mu_ref)), max(dist(sig_ref)), max(dist(prob_ref))))
   
   
   if (i==1){
@@ -27,33 +32,41 @@ label_switching<-function(mu,sig,prob){
   if (i==3){
     ord<-order(prob)
   }
+  
   #On retourne les paramètres triés selon l'odre du paramètre séléctionné
+  
   return(list(mu=matrix(mu[ord],nrow=nrow(mu)),
               sig=matrix(sig[ord],nrow=nrow(sig)),
               prob=matrix(prob[ord],nrow=nrow(prob))))
 }
+
+
 #Permet de calculer le produit des colonnes d'une matrice
-colprod<-function(x){
-  M<-rep(0,nrow(x))
+colprod <- function(x){
+  M <- rep(0,nrow(x))
   for (i in 1:nrow(x)){
-    M[i]<-prod(x[i,])
+    M[i] <- prod(x[i,])
   }
   return(M)
 }
 
+
 #Fonction qui calcule la mise a jour des poids W
-weight_t<-function(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig,
-                   xbar=rep(mean(x),K),
-                   v=rep(20,K),
-                   s_k=rep(var(x),K),
-                   l=rep(1,K)){
-  sd_mu<- sqrt(rinvgamma(K,0.5*v,s_k))/l
+
+weight_t <- function(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig,
+                   xbar = rep(mean(x),K),
+                   v = rep(20,K),
+                   s_k = rep(var(x),K),
+                   l = rep(1,K)){
+  sd_mu <- sqrt(rinvgamma(K,0.5*v,s_k))/l
+  
   #Calcul du dénominateur de la formule
-  q<-as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu)*apply(sig_t,1,dtmvnorm,x=sig,sigma=tau_sig,lower=c(0,0)))
-  M<-t(as.matrix(W))
-  L_t<-M%*%q
+  q <- as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu)*apply(sig_t,1,dtmvnorm,x=sig,sigma=tau_sig,lower=c(0,0)))
+  M <- t(as.matrix(W))
+  L_t <- M%*%q
+  
   #Calcul du numérateur de la formule
-  num_t<-colprod(t(apply(mu_t,1,dnorm,xbar,sd_mu)*apply(sig_t^2,1,dinvgamma,0.5*v,s_k)))
+  num_t <- colprod(t(apply(mu_t,1,dnorm,xbar,sd_mu)*apply(sig_t^2,1,dinvgamma,0.5*v,s_k)))
   return(as.vector(num_t/L_t))
 }
 
@@ -63,7 +76,7 @@ weight_t<-function(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig,
 #Prior pour p : dirichlet(delta)
 #Prior pour mu: N(xbar,sig/l)
 #Prior pour sig : InvGamma(0.5*v,s_k)
-abc<-function(n_iter,N_init,N,K,n,x,
+abc <- function(n_iter,N_init,N,K,n,x,
              q=0.5,
              p=0.5,
              xbar=rep(mean(x),K),
@@ -76,11 +89,11 @@ abc<-function(n_iter,N_init,N,K,n,x,
 
   #Initialisation
   #Calcul de la densité estimé de l'échantillon observé
-  f_obs<-densityfun(x)
+  f_obs <- densityfun(x)
   
-  rho<-rep(0,N_init)
-  prob<-rdirichlet(N_init,delta)
-  sig<-matrix(sqrt(rinvgamma(K*N_init,0.5*v,s_k)),nrow=N_init)
+  rho <- rep(0,N_init)
+  prob <- rdirichlet(N_init,delta)
+  sig <- matrix(sqrt(rinvgamma(K*N_init,0.5*v,s_k)),nrow=N_init)
   mu<-t(xbar + matrix(rnorm(K*N_init),K)*t(sig)/l)
   
   #Calcul de la distance de hellinger 
