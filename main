@@ -24,17 +24,15 @@ lines(t1$mu,type='l',col='firebrick2',lwd=2)
 points(1,1.5,pch=16,col='firebrick2')
 lines(t2$mu,type='l',col='deepskyblue',lwd=2)
 points(2,0,pch=16,col='deepskyblue')
-lines(t4$mu,type='l',col='magenta4',lwd=2)
+lines(t3$mu,type='l',col='magenta4',lwd=2)
 points(0,1,pch=16,col='magenta4')
-lines(t5$mu,type='l',col='green4',lwd=2)
+lines(t4$mu,type='l',col='green4',lwd=2)
 points(3,2,pch=16,col='green4')
 
 
 #illustration bonne convergence
 em_cv <- est_EM(melange_1$x, n_em, epsilon, c(0.5,0.5), c(1,1.5), c(2,2))
 plot_traj_mu(em_cv)
-plot_traj_sig(em_cv)
-plot_traj_p(em_cv)
 
 
 
@@ -49,44 +47,44 @@ plot_traj_p(em_cv)
 #illustration bonne convergence de gibbs
 
 gamma <- c(2/3,2/3)
-s <- var(melange_1$x)
+s <- rep(var(melange_1$x),2)
 l <- c(1,1)
-eps <- mean(melange_1$x)
+eps <- rep(mean(melange_1$x),2)
+v <- c(1,1)
+p_0<- rep(1/2,2)
+mu_0 <- c(3,4)
+sig_0 <- rep(1,2)
+
+
+set.seed(1608)
+g_cv <- gibbs(10000, melange_1$x, gamma, s, l, eps, v, mu_0, p_0, sig_0)
+
+plot_hist_densite(melange_1, g_cv, 10000, seq(-10,10,0.1), 9000)
+
+#illustration label switiching 
+
+gamma <- c(2/3,2/3)
+s <- rep(var(melange_2$x),2)
+l <- c(1,1)
+eps <- rep(mean(melange_2$x),2)
 v <- c(1,1)
 mu_0 <- c(0,1)
 p_0 <- c(0.5,0.5)
 sig_0 <- c(2,3)
 
 set.seed(1608)
-g_cv <- gibbs(10 000, melange_1$x, gamma, s, l, eps, v, mu_0, p_0, sig_0)
-
-plot_hist_densite(melange_1$x, g_cv, 10 000, seq(-10,10,0.1), 9000)
-
-#illustration label switiching 
-
-gamma <- c(2/3,2/3)
-s <- var(melange_2$x)
-l <- c(1,1)
-eps <- mean(melange_2$x)
-v <- c(1,1)
-mu_0 <- c(0,1)
-p_0 <- c(0.5,0.5)
-sig_0 <- c(2,3)
-
-gibbs_labswi <- gibbs(100 000, melange_2$x, gamma, s, l, eps, v, mu_0, p_0, sig_0)
+gibbs_labswi <- gibbs(100000, melange_2$x, gamma, s, l, eps, v, mu_0, p_0, sig_0)
 
 #histogrammes et trajectoires mu avant reordering
 plot_hist_mu_marg(gibbs_labswi)
-plot_traj(gibbs_labswi,mu)
+plot_traj_mu(gibbs_labswi)
 
 #reordering
 gibbs_order <- pivotal_reordering(melange_2$x, gibbs_labswi) 
 
 #histogrammes et trajectoires mu apres reordering
 plot_hist_mu_marg(gibbs_order)
-plot_traj(gibbs_order,mu)
-
-
+plot_traj_mu(gibbs_order)
 
 
 
