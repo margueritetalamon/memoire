@@ -2,7 +2,6 @@ rm(list=ls())
 
 set.seed(203)
 
-x <- rmixtmod(n,c(0.7,0.3),c(0,2.5),c(1,1))$x
 
 n <- 500 #taille du vecteur d'observations 
 K <- 2 #nombre de composantes
@@ -10,6 +9,7 @@ N <- 300 #nombre d'échantillons simulés
 n_iter <- 50 #nombre d'itérations
 N_init <- 5*N #nombre d'échantillons premiere itération
 
+x <- rmixtmod(n,c(0.7,0.3),c(0,2.5),c(1,1))$x
 
 output_ABC <- abc_fix(n_iter,N_init,N,K,n,x)
 
