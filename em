@@ -1,7 +1,7 @@
 rm(list = ls())
 
 comp_gmixt <- function(k,x,p,mu,sigma){
-  #renvoie la densite du reel x pour la keme classe du melange multpilie par son poids
+  #renvoie la densite du reel x pour la keme classe du melange multiplie par son poids
   return(p[k]*dnorm(x,mu[k],sqrt(sigma[k])))
 }
 
