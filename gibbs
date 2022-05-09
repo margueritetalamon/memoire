@@ -74,7 +74,7 @@ loglikelyhood_psig_fix <- function(mu_1, mu_2, x){
   #evaluation de la fonction de vraisemblance à p et sigma fixé sachant l'echantillon x pour le point mu
   output <- 0
   for(i in 1:length(x)) {
-    output <- output + log(.7*dnorm(x[i], mu_1) + 0.3*dnorm(x[i], mu_2)) #valeurs à adapter
+    output <- output + log(.3*dnorm(x[i], mu_1) + 0.7*dnorm(x[i], mu_2)) #valeurs à adapter
   }
   return(output)
 }
