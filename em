@@ -44,3 +44,31 @@ est_EM <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
   n_stop <- n_em
   return(list(p=p[1:n_stop,], mu=mu[1:n_stop,], sig=sig[1:n_stop,],like=like[1:n_stop]))
 }
+
+
+
+#em à p et sigma fixé
+est_EM_mu <- function(x,n_em,epsilon,p, mu_0, sig) {
+  # initialisation
+  K <- length(mu_0)
+  nb_obs <- length(x)
+  M<-matrix(0, nrow=nb_obs, ncol=K)
+  Y<-matrix(0, nrow=nb_obs, ncol=K)
+  mu <- matrix(0,n_em+1,K)
+  mu[1,] <- mu_0
+  like <- rep(0,n_em)
+  like[1] <- loglikelihood_mm(x,p,mu[1,],sig)
+  # Maximization
+  for (t in 1:n_em){
+    M <- sapply(1:K,comp_gmixt,x,p,mu[t,],sig)/dmixtmod(x,p,mu[t,],sig)
+    N <- colSums(M)
+    mu[t+1,] <- (t(M)%*%x)/N
+    Y <- sapply(x,f,mu[t+1,],1:K)
+    like[t+1] <- loglikelihood_mm(x,p,mu[t+1,],sig)
+    if (abs(like[t+1]-like[t])<epsilon) {
+      n_stop <- t 
+      break}
+  }
+  n_stop <- n_em
+  return(list(mu=mu[1:n_stop,],like=like[1:n_stop]))
+}
