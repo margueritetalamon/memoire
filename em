@@ -11,7 +11,8 @@ f <- function(x, mu,k){
 }
 
 
-est_EM2 <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
+est_EM <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
+
   # initialisation
   K <- length(mu_0)
   nb_obs <- length(x)
@@ -24,7 +25,8 @@ est_EM2 <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
   p[1,]<- p_0
   mu[1,] <- mu_0
   sig[1,] <- sig_0
-  like[1] <- loglikelihood_mm(x,p[1,],mu[1,],sqrt(sig[1,]))
+  like[1] <- loglikelyhood_mixtmod(x,p[1,],mu[1,],sqrt(sig[1,]))
+  
   # Maximization
   for (t in 1:n_em){
     M <- sapply(1:K,comp_gmixt,x,p[t,],mu[t,],sig[t,])/dmixtmod(x,p[t,],mu[t,],sig[t,])
@@ -39,6 +41,6 @@ est_EM2 <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
       n_stop <- t 
       break}
   }
-  
+  n_stop <- n_em
   return(list(p=p[1:n_stop,], mu=mu[1:n_stop,], sig=sig[1:n_stop,],like=like[1:n_stop]))
 }
