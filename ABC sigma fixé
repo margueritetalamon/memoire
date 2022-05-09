@@ -1,20 +1,20 @@
 
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
-rdirich_inv<-function(n_left,prob,index,delta,K,p){
-  prob_temp<-prob[index,]
-  z_temp<-rgamma(n_left,sum(delta),1)
-  b_temp<-matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
-  eta_temp<-matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
-  prob_prop<-z_temp*b_temp*prob_temp+eta_temp
-  return(prob_prop/rowSums(prob_prop))
+rdirich_inv <- function(n_left,prob,index,delta,K,p){
+  prob_t <- prob[index,]
+  z_t <- rgamma(n_left,sum(delta),1)
+  b_t <- matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
+  eta_t <- matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
+  prob_p <- z_t*b_t*prob_t+eta_t
+  return(prob_p/rowSums(prob_p))
 }
 #Fonction permettant de traiter le label switching
-label_switching<-function(mu,prob){
+label_switching <- function(mu,prob){
   #Calcul des valeurs représentatives
-  mu_ref<-rowMeans(pnorm(mu,mean(mu),sd(mu)))
-  prob_ref<-rowMeans(pnorm(prob,mean(prob),sd(prob)))
+  mu_ref <- rowMeans(pnorm(mu,mean(mu),sd(mu)))
+  prob_ref <- rowMeans(pnorm(prob,mean(prob),sd(prob)))
   #Selection de la variable qui présente le plus grand écart entre deux de ses valeurs représentatives
-  i<-which.max(c(max(dist(mu_ref)), max(dist(prob_ref))))
+  i <- which.max(c(max(dist(mu_ref)), max(dist(prob_ref))))
   
   
   if (i==1){
@@ -28,25 +28,25 @@ label_switching<-function(mu,prob){
               prob=matrix(prob[ord],nrow=nrow(prob))))
 }
 #Permet de calculer le produit des colonnes d'une matrice
-colprod<-function(x){
-  M<-rep(0,nrow(x))
+colprod <- function(x){
+  M <- rep(0,nrow(x))
   for (i in 1:nrow(x)){
-    M[i]<-prod(x[i,])
+    M[i] <- prod(x[i,])
   }
   return(M)
 }
 
 #Fonction qui calcule la mise a jour des poids W
-weight_t<-function(mu_t,W,mu,tau_mu,
+weight_t <- function(mu_t,W,mu,tau_mu,
                    sig=rep(1,K),
                    xbar=c(0,2),
                    l=rep(0.25,K)){
   #Calcul du dénominateur de la formule
-  q<-as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu))
-  M<-t(as.matrix(W))
-  L_t<-M%*%q
+  q <- as.matrix(apply(mu_t,1,dmnorm,x=mu,varcov=tau_mu))
+  M <- t(as.matrix(W))
+  L_t <- M%*%q
   #Calcul du numérateur de la formule
-  num_t<-colprod(t(apply(mu_t,1,dnorm,xbar,sqrt(sig/l))))
+  num_t <- colprod(t(apply(mu_t,1,dnorm,xbar,sqrt(sig/l))))
   return(as.vector(num_t/L_t))
 }
 
@@ -56,7 +56,7 @@ weight_t<-function(mu_t,W,mu,tau_mu,
 #Prior pour p : dirichlet(delta)
 #Prior pour mu: N(xbar,sig/l)
 #Sigma fixé
-abc_fix<-function(n_iter,N_init,N,K,n,x,
+abc_fix <- function(n_iter,N_init,N,K,n,x,
               sig=rep(1,K),
               q=0.5,
               p=0.5,
@@ -68,84 +68,84 @@ abc_fix<-function(n_iter,N_init,N,K,n,x,
   
   #Initialisation
   #Calcul de la densité estimé de l'échantillon observé
-  f_obs<-densityfun(x)
+  f_obs <- densityfun(x)
   
-  rho<-rep(0,N_init)
-  prob<-rdirichlet(N_init,delta) 
-  mu<-matrix(rnorm(K*N_init,xbar,sqrt(sig/l)),ncol=K)
+  rho <- rep(0,N_init)
+  prob <- rdirichlet(N_init,delta) 
+  mu <- matrix(rnorm(K*N_init,xbar,sqrt(sig/l)),ncol=K)
   #Calcul de la distance de hellinger 
   rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
   #Calcul de la densité de l'échantillon simulé
-    f_prop <- statip::densityfun(gen3_mix(n,prob[i,],mu[i,],sig))
+    f_p <- statip::densityfun(rgmix(n,prob[i,],mu[i,],sig)$x)
     cubature::cubintegrate(function(x){
-      (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+      (sqrt(f_obs(x))- sqrt(f_p(x)))^2
     }, -Inf, Inf)$integral
   }
   
   rho<-sqrt(0.5*rho)
   
   #On garde les N composantes correspondant aux N plus petites distances
-  keep<-order(rho)[seq_len(N)]
-  rho<-rho[keep]
-  mu<-mu[keep,]
-  prob<-prob[keep,]
-  W<-rep(1/N,N)
+  keep <- order(rho)[seq_len(N)]
+  rho <- rho[keep]
+  mu <- mu[keep,]
+  prob <- prob[keep,]
+  W <- rep(1/N,N)
   
   #Traiter le problème du Label Switching
-  switch<-label_switching(mu,prob)
-  mu<-switch$mu
-  prob<-switch$prob
+  switch <- label_switching(mu,prob)
+  mu <- switch$mu
+  prob <- switch$prob
   
   
-  rho_t<-rep(0,N)
+  rho_t <- rep(0,N)
   
-  prob_t<-matrix(0,N,K)
-  mu_t<-matrix(0,N,K)
+  prob_t <- matrix(0,N,K)
+  mu_t <- matrix(0,N,K)
   
   for (t in 2:n_iter){
-    eps<-quantile(rho,q)
-    tau_mu<-2*cov(mu)
-    n_left<-N
+    eps <- quantile(rho,q)
+    tau_mu <- 2*cov(mu)
+    n_left <- N
     #Simulation N nouveaux échantillons, n_left est le nombre d'échantillons manquants
     while(n_left>0){
     #On séléctionne n_left composantes parmis les N composantes précédentes
-      index<-sample(1:N,n_left,TRUE,W/sum(W))
+      index <- sample(1:N,n_left,TRUE,W/sum(W))
       #Mise à jour les n_left paramètres correspondants
-      prob_prop<-rdirich_inv(n_left,prob,index,delta,K,p)
-      mu_prop<-mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
+      prob_p <- rdirich_inv(n_left,prob,index,delta,K,p)
+      mu_p <- mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
       
       #Calcul des distances de Hellignger pour ses composantes
       
-      rho_prop<-foreach (i= seq_len(n_left), .combine =c) %dopar% { 
-        f_prop <- statip::densityfun(gen3_mix(n,prob_prop[i,],mu_prop[i,],sig))
+      rho_p <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
+        f_p <- statip::densityfun(rgmix(n,prob_p[i,],mu_p[i,],sig)$x)
         cubature::cubintegrate(function(x){
-          (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+          (sqrt(f_obs(x))- sqrt(f_p(x)))^2
         }, -Inf, Inf)$integral
       }
-      rho_prop<-sqrt(0.5*rho_prop)
+      rho_p <- sqrt(0.5*rho_prop)
       
       #On retient que les composantes pour lesquels la distance est inférieure au seuil de tolérance
-      keep<-(rho_prop <= eps)
-      batch <- (N - n_left) + seq_len(sum(keep))
+      keep <- (rho_p <= eps)
+      seq_p <- (N - n_left) + seq_len(sum(keep))
       
       #On remplie la matrice des échantillons
-      rho_t[batch]<-rho_prop[keep]
-      mu_t[batch,]<-mu_prop[keep,]
-      prob_t[batch,]<-prob_prop[keep,]
+      rho_t[seq_p] <- rho_p[keep]
+      mu_t[seq_p,] <- mu_p[keep,]
+      prob_t[seq_p,] <- prob_p[keep,]
       
       
       
-      n_left<-n_left - sum(keep)
+      n_left <- n_left - sum(keep)
       
     }
     #Mise à jour du vecteur des probabilités
-    W<-weight_t(mu_t,W,mu,tau_mu)
+    W <- weight_t(mu_t,W,mu,tau_mu)
     
     #Traiter le label switching
-    switch_t<-label_switching(mu_t,prob_t)
+    switch_t <- label_switching(mu_t,prob_t)
     
-    mu<-switch_t$mu  
-    prob<-switch_t$prob
+    mu <- switch_t$mu  
+    prob <- switch_t$prob
     
   }
   return(list(prob=prob,mu=mu))
