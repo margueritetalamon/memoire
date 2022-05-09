@@ -1,5 +1,3 @@
-rm(list = ls())
-
 comp_gmixt <- function(k,x,p,mu,sigma){
   #renvoie la densite du reel x pour la keme classe du melange multiplie par son poids
   return(p[k]*dnorm(x,mu[k],sqrt(sigma[k])))
@@ -12,7 +10,7 @@ f <- function(x, mu,k){
 
 
 est_EM <- function(x,n_em,epsilon,p_0, mu_0, sig_0) {
-
+  
   # initialisation
   K <- length(mu_0)
   nb_obs <- length(x)
