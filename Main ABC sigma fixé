@@ -114,7 +114,7 @@ abc_fix <- function(n_iter,N_init,N,K,n,x,
   #Calcul de la distance de hellinger 
   rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
   #Calcul de la densité de l'échantillon simulé
-    f_p <- statip::densityfun(rmixmod(n,prob[i,],mu[i,],sig)$x)
+    f_p <- statip::densityfun(rmixtmod(n,prob[i,],mu[i,],sig)$x)
     cubature::cubintegrate(function(x){
       (sqrt(f_obs(x))- sqrt(f_p(x)))^2
     }, -Inf, Inf)$integral
@@ -155,7 +155,7 @@ abc_fix <- function(n_iter,N_init,N,K,n,x,
       #Calcul des distances de Hellignger pour ses composantes
       
       rho_p <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
-        f_p <- statip::densityfun(rmixmod(n,prob_p[i,],mu_p[i,],sig)$x)
+        f_p <- statip::densityfun(rmixtmod(n,prob_p[i,],mu_p[i,],sig)$x)
         cubature::cubintegrate(function(x){
           (sqrt(f_obs(x))- sqrt(f_p(x)))^2
         }, -Inf, Inf)$integral
