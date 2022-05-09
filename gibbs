@@ -79,6 +79,32 @@ loglikelyhood_psig_fix <- function(mu_1, mu_2, x){
 }
 
 
+pivotal_reordering<-function(x,x_gibbs){
+  indice <- order(x_gibbs$like,decreasing = TRUE)[1]
+  K <- ncol(x_gibbs$p)
+  n_gibbs <- nrow(x_gibbs$p)
+  ormu=matrix(0,n_gibbs,K)
+  orsig=matrix(0,n_gibbs,K)
+  orp=matrix(0,n_gibbs,K)
+  pz_etoile=p_tau=matrix(0,n_gibbs,K)
+  perma <- permn(1:K) #toutes les combinaisons de permutations 1:k
+  entropy <- rep(0,factorial(K))
+  pz_etoile <- t(x_gibbs$p[indice,]*sapply(x,dnorm,x_gibbs$mu[indice,],sqrt(x_gibbs$sig[indice,])))
+  pz_etoile <- pz_etoile/rowSums(pz_etoile)
+  for (t in 1:n_gibbs) {
+    p_tau <- t(x_gibbs$p[t,]*sapply(x,dnorm,x_gibbs$mu[t,],sqrt(x_gibbs$sig[t,])))
+    p_tau <- p_tau/rowSums(p_tau)
+    
+    for (j in 1:factorial(K)) {
+      entropy[j] <- sum(colSums(pz_etoile*log(pz_etoile/p_tau[,perma[[j]]])))
+    }
+    ordre <- order(entropy,decreasing=TRUE)[factorial(K)] 
+    ormu[t,] <- x_gibbs$mu[t,perma[[ordre]]] 
+    orsig[t,] <- x_gibbs$sig[t,perma[[ordre]]] 
+    orp[t,] <- x_gibbs$p[t,perma[[ordre]]]
+  }
+  return(list(mu_ordo=ormu,sig_ordo=orsig,p_ordo=orp))
+}
 
 
 
