@@ -2,12 +2,12 @@
 #Fonction qui permet de calculer la mise à jour de la loi de Dirichlet pour les p
 
 rdirich_inv <- function(n_left,prob,index,delta,K,p){
-  prob_temp <- prob[index,]
-  z_temp <- rgamma(n_left,sum(delta),1)
-  b_temp <- matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
-  eta_temp <- matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
-  prob_prop <- z_temp*b_temp*prob_temp+eta_temp
-  return(prob_prop/rowSums(prob_prop))
+  prob_t <- prob[index,]
+  z_t <- rgamma(n_left,sum(delta),1)
+  b_t <- matrix(rbeta(K*n_left,p*delta,(1-p)*delta),n_left)
+  eta_t <- matrix(rgamma(K*n_left,(1-p)*delta,1),n_left)
+  prob_p <- z_t*b_t*prob_t+eta_t
+  return(prob_p/rowSums(prob_p))
 }
 
 #Fonction permettant de traiter le label switching
@@ -94,14 +94,14 @@ abc <- function(n_iter,N_init,N,K,n,x,
   rho <- rep(0,N_init)
   prob <- rdirichlet(N_init,delta)
   sig <- matrix(sqrt(rinvgamma(K*N_init,0.5*v,s_k)),nrow=N_init)
-  mu<-t(xbar + matrix(rnorm(K*N_init),K)*t(sig)/l)
+  mu <- t(xbar + matrix(rnorm(K*N_init),K)*t(sig)/l)
   
   #Calcul de la distance de hellinger 
-  rho<-foreach (i= seq_len(N_init), .combine =c) %dopar% { 
+  rho <- foreach (i= seq_len(N_init), .combine =c) %dopar% { 
   #Calcul de la densité de l'échantillon simulé
-    f_prop <- statip::densityfun(gen3_mix(100,prob[i,],mu[i,],sig[i,]))
+    f_p <- statip::densityfun(rgmix(n,prob[i,],mu[i,],sig[i,])$x)
     cubature::cubintegrate(function(x){
-      (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+      (sqrt(f_obs(x))- sqrt(f_p(x)))^2
     }, -Inf, Inf)$integral
   }
   
@@ -142,32 +142,32 @@ abc <- function(n_iter,N_init,N,K,n,x,
       
       #Mise à jour les n_left paramètres correspondants 
       
-      prob_prop <- rdirich_inv(n_left,prob,index,delta,K,p)
-      mu_prop <- mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
-      sig_prop <- matrix(1,n_left,K)
-      sig_prop <- sig[index,]^2+rtmvnorm(n_left,rep(0,K),tau_sig_2,lower=rep(0,K))
+      prob_p <- rdirich_inv(n_left,prob,index,delta,K,p)
+      mu_p <- mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
+      sig_p <- matrix(1,n_left,K)
+      sig_p <- sig[index,]^2+rtmvnorm(n_left,rep(0,K),tau_sig_2,lower=rep(0,K))
       
       #Calcul des distances de Hellignger pour ses composantes
       
-      rho_prop <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
-        f_prop <- statip::densityfun(gen3_mix(100,prob_prop[i,],mu_prop[i,],sig_prop[i,]))
+      rho_p <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
+        f_p <- statip::densityfun(rgmix(n,prob_prop[i,],mu_prop[i,],sig_prop[i,])$x)
         cubature::cubintegrate(function(x){
-          (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
+          (sqrt(f_obs(x))- sqrt(f_p(x)))^2
         }, -Inf, Inf)$integral
       }
-      rho_prop <- sqrt(0.5*rho_prop)
+      rho_p <- sqrt(0.5*rho_prop)
       
       #On retient que les composantes pour lesquels la distance est inférieure au seuil de tolérance
       
-      keep <- (rho_prop <= eps)
-      batch <- (N - n_left) + seq_len(sum(keep))
+      keep <- (rho_p <= eps)
+      seq_p <- (N - n_left) + seq_len(sum(keep))
       
       #On remplie la matrice des échantillons 
       
-      rho_t[batch] <- rho_prop[keep]
-      mu_t[batch,] <- mu_prop[keep,]
-      sig_t[batch,] <- sig_prop[keep,]
-      prob_t[batch,] <- prob_prop[keep,]
+      rho_t[seq_p] <- rho_p[keep]
+      mu_t[seq_p,] <- mu_p[keep,]
+      sig_t[seq_p,] <- sig_p[keep,]
+      prob_t[seq_p,] <- prob_p[keep,]
       
       
       
