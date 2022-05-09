@@ -37,14 +37,14 @@ gibbs_labswi <- gibbs(100 000, melange_2$x, gamma, s, l, eps, v, mu_0, p_0, sig_
 
 #histogrammes et trajectoires mu avant reordering
 plot_hist_mu_marg(gibbs_labswi)
-plot_traj_mu(gibbs_labswi)
+plot_traj_mu(gibbs_labswi,mu)
 
 #reordering
 gibbs_order <- pivotal_reordering(melange_2$x, gibbs_labswi) 
 
 #histogrammes et trajectoires mu apres reordering
 plot_hist_mu_marg(gibbs_order)
-plot_traj_mu(gibbs_order)
+plot_traj_mu(gibbs_order,mu)
 
 
 
