@@ -2,25 +2,26 @@ rm(list = ls())
 
 
 rmixtmod <- function(n,p,mu, sigma) {
-  #Générateur de modèles de mélange
+  #Générateur de modèles de mélange gaussien de paramètres p, mu, sigma (variance)
   z <- sample(c(1:length(p)),n,replace = TRUE ,prob=p)
   return(list(x=rnorm(n,mu[z],sqrt(sigma[z])),z=z))
 }
 
 
-melange <- gen3_mix(1000,c(0.3,0.7),c(0,2.5),c(1,1))
-
-
-gibbs <- function(n_gibbs,x,K,gamma,s,l,eps,v,mu0,p0,sig0){
+gibbs <- function(n_gibbs,x,gamma,s,l,eps,v,mu0,p0,sig0){ #n_gibbs est le nombre d'itérations de gibbs, x est l'échantillon, les autres paramètres sont les paramètres des lois a priori 
+  
+  #initialisation
+  K <- length(mu0)
   p <- matrix(0,n_gibbs+1,K)
   mu <- matrix(0,n_gibbs+1,K)
   sig <- matrix(0,n_gibbs+1,K)
+  like <- rep(0,n_gibbs+1)
   p[1,]<- p0
   mu[1,] <- mu0
   sig[1,] <- sig0
+  like[1] <- loglikelihood_mm(x,p[1,],mu[1,],sig[1,])
+  
   u <- matrix(0,K,length(x)) #matrice de proba
-  like <- rep(0,n_gibbs+1)
-  #like[1] <- loglikelihood_mm(x,p[1,],mu[1,],sig[1,])
   z <- rep(0,length(x))
   me <- rep(0,K)
   ve <- rep(0,K)
@@ -37,14 +38,14 @@ gibbs <- function(n_gibbs,x,K,gamma,s,l,eps,v,mu0,p0,sig0){
       me[j] <- ((mean(x[z==j])*n[j])+(l[j]*eps[j]))/(l[j]+n[j])
       var_b[j] <- mean(x[z==j]^2)-mean(x[z==j])^2
       ve[j] <- s[j] + n[j]*var_b[j] + (l[j]*n[j]*(eps[j]-mean(x[z==j]))^2)/(n[j]+l[j])
-      if (sum(z==j)==0){
+      if (sum(z==j)==0){ #condition si il n'y a plus la composante j representée dans la matrice z
          me <- eps[j]
          ve <- s[j]
       }
      }
     mu[t+1,] <- rnorm(K,me,sqrt(sig[t,]/(n+l)))
     sig[t+1,] <- rinvgamma(K,(v+n)/2,ve/2)
-    like[t+1] <- loglikelihood_mm(x,p[t+1,],mu[t+1,],sig[t+1,])
+    like[t+1] <- loglikelyhood_mixtmod(x,p[t+1,],mu[t+1,],sig[t+1,])
     
   }
   return(list(p=p,mu=mu,sig=sig,like=like))
@@ -53,35 +54,26 @@ gibbs <- function(n_gibbs,x,K,gamma,s,l,eps,v,mu0,p0,sig0){
 
 
 
-K <- 2
-gamma <- rep(1/(K+1),K)
-s <- 2*rep(var(melange$x),K) #a definir
-l <- rep(1,K) #a definir
-eps <- rep(mean(melange$x),K) #a definir
-v <- rep(20,K)
-p0<- rep(1/K,K)
-mu0 <- c(5,1.5)
-sig0 <- rep(1,K)
-n_gibbs <- 10000
-test_ <-gibbs(n_gibbs,melange$x,K,gamma,s,l,eps,v,mu0,p0,sig0)
-
 
 
 dmixtmod <- function(x,p,mu,sig){
+  #calcul la densité d'un modèle de mélange, x peut etre un reel un vecteur ou une matrice
   return(colSums(p*sapply(x,dnorm,mu,sqrt(sig))))
 }
 
 
-loglikelihood_mm <-function(x,p,mu,sigma){
+loglikelyhood_mixtmod<-function(x,p,mu,sigma){
+  #evaluation de la fonction de vraisemblance sachant l'echantillon x pour les points p,mu, sigma
   return(sum(log(sapply(x,dmixtmod,p,mu,sigma))))
 }
 
 
 
-dtest <- function(mu_1, mu_2, x){
+loglikelyhood_psig_fix <- function(mu_1, mu_2, x){
+  #evaluation de la fonction de vraisemblance à p et sigma fixé sachant l'echantillon x pour le point mu
   output <- 0
   for(i in 1:length(x)) {
-    output <- output + log(.7*dnorm(x[i], mu_1) + 0.3*dnorm(x[i], mu_2)) #proprotions à adapter
+    output <- output + log(.7*dnorm(x[i], mu_1) + 0.3*dnorm(x[i], mu_2)) #valeurs à adapter
   }
   return(output)
 }
