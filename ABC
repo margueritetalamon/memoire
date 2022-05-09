@@ -105,74 +105,87 @@ abc <- function(n_iter,N_init,N,K,n,x,
     }, -Inf, Inf)$integral
   }
   
-  rho<-sqrt(0.5*rho)
+  rho <- sqrt(0.5*rho)
   
   #On garde les N composantes correspondant aux N plus petites distances
-  keep<-order(rho)[seq_len(N)]
-  rho<-rho[keep]
-  mu<-mu[keep,]
-  sig<-sig[keep,]
-  prob<-prob[keep,]
-  W<-rep(1/N,N)
+  keep <- order(rho)[seq_len(N)]
+  rho <- rho[keep]
+  mu <- mu[keep,]
+  sig <- sig[keep,]
+  prob <- prob[keep,]
+  W <- rep(1/N,N)
   
   #Traiter le problème du Label Switching
-  switch<-label_switching(mu,sig,prob)
-  mu<-switch$mu
-  sig<-switch$sig
-  prob<-switch$prob
+  switch <- label_switching(mu,sig,prob)
+  mu <- switch$mu
+  sig <- switch$sig
+  prob <- switch$prob
 
   
-  rho_t<-rep(0,N)
+  rho_t <- rep(0,N)
   
-  prob_t<-matrix(0,N,K)
-  mu_t<-matrix(0,N,K)
-  sig_t<-matrix(0,N,K)
+  prob_t <- matrix(0,N,K)
+  mu_t <- matrix(0,N,K)
+  sig_t <- matrix(0,N,K)
   
   for (t in 2:n_iter){
-    eps<-quantile(rho,q)
-    tau_mu<-2*cov(mu)
-    tau_sig_2<-2*cov(sig^2)
+    eps <- quantile(rho,q)
+    tau_mu <- 2*cov(mu)
+    tau_sig_2 <- 2*cov(sig^2)
     n_left<-N
+    
     #Simulation N nouveaux échantillons, n_left est le nombre d'échantillons manquants
-    while(n_left>0){
+    while(n_left > 0){
+    
       #On séléctionne n_left composantes parmis les N composantes précédentes
-      index<-sample(1:N,n_left,TRUE,W/sum(W))
+      index <- sample(1:N,n_left,TRUE,W/sum(W))
+      
       #Mise à jour les n_left paramètres correspondants 
-      prob_prop<-rdirich_inv(n_left,prob,index,delta,K,p)
-      mu_prop<-mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
-      sig_prop<-matrix(1,n_left,K)
-      sig_prop<-sig[index,]^2+rtmvnorm(n_left,rep(0,K),tau_sig_2,lower=rep(0,K))
+      
+      prob_prop <- rdirich_inv(n_left,prob,index,delta,K,p)
+      mu_prop <- mu[index,]+rtmvnorm(n_left,rep(0,K),tau_mu)
+      sig_prop <- matrix(1,n_left,K)
+      sig_prop <- sig[index,]^2+rtmvnorm(n_left,rep(0,K),tau_sig_2,lower=rep(0,K))
+      
       #Calcul des distances de Hellignger pour ses composantes
-      rho_prop<-foreach (i= seq_len(n_left), .combine =c) %dopar% { 
+      
+      rho_prop <- foreach (i= seq_len(n_left), .combine =c) %dopar% { 
         f_prop <- statip::densityfun(gen3_mix(100,prob_prop[i,],mu_prop[i,],sig_prop[i,]))
         cubature::cubintegrate(function(x){
           (sqrt(f_obs(x))- sqrt(f_prop(x)))^2
         }, -Inf, Inf)$integral
       }
-      rho_prop<-sqrt(0.5*rho_prop)
+      rho_prop <- sqrt(0.5*rho_prop)
+      
       #On retient que les composantes pour lesquels la distance est inférieure au seuil de tolérance
-      keep<-(rho_prop <= eps)
+      
+      keep <- (rho_prop <= eps)
       batch <- (N - n_left) + seq_len(sum(keep))
+      
       #On remplie la matrice des échantillons 
-      rho_t[batch]<-rho_prop[keep]
-      mu_t[batch,]<-mu_prop[keep,]
-      sig_t[batch,]<-sig_prop[keep,]
-      prob_t[batch,]<-prob_prop[keep,]
+      
+      rho_t[batch] <- rho_prop[keep]
+      mu_t[batch,] <- mu_prop[keep,]
+      sig_t[batch,] <- sig_prop[keep,]
+      prob_t[batch,] <- prob_prop[keep,]
       
       
       
-      n_left<-n_left - sum(keep)
+      n_left <- n_left - sum(keep)
       
     }
+    
     #Mise à jour du vecteur des probabilités
-    W<-weight_t(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig_2)
+    
+    W <- weight_t(mu_t,sig_t,W,mu,sig,tau_mu,tau_sig_2)
     
     #Traiter le label switching
-    switch_t<-label_switching(mu_t,sig_t,prob_t)
     
-    mu<-switch_t$mu
-    sig<-switch_t$sig
-    prob<-switch_t$prob
+    switch_t <- label_switching(mu_t,sig_t,prob_t)
+    
+    mu <- switch_t$mu
+    sig <- switch_t$sig
+    prob <- switch_t$prob
     
   }
   return(list(prob=prob,mu=mu,sig=sig))
