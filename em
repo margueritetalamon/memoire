@@ -64,7 +64,7 @@ est_EM_mu <- function(x,n_em,epsilon,p, mu_0, sig) {
     N <- colSums(M)
     mu[t+1,] <- (t(M)%*%x)/N
     Y <- sapply(x,f,mu[t+1,],1:K)
-    like[t+1] <- loglikelihood_mm(x,p,mu[t+1,],sig)
+    like[t+1] <- loglikelyhood_mixtmod(x,p,mu[t+1,],sig)
     if (abs(like[t+1]-like[t])<epsilon) {
       n_stop <- t 
       break}
