@@ -1,5 +1,8 @@
 rm(list = ls())
 
+library("invgamma")
+library("dirmult")
+library("combinat")
 
 rmixtmod <- function(n,p,mu, sigma) {
   #Générateur de modèles de mélange gaussien de paramètres p, mu, sigma (variance)
